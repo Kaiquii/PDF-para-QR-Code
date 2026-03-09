@@ -1,19 +1,27 @@
-import { put } from "@vercel/blob";
+import { put, type PutBlobResult } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);
   const filename = searchParams.get("filename");
+  const fileBody = request.body as ReadableStream;
 
-  if (!filename || !request.body) {
+  if (!filename) {
     return NextResponse.json(
-      { error: "Nome do arquivo não encontrado." },
-      { status: 400 }
+      { error: "O parâmetro 'filename' é obrigatório." },
+      { status: 400 },
+    );
+  }
+
+  if (!request.body) {
+    return NextResponse.json(
+      { error: "O corpo da requisição (arquivo) está vazio." },
+      { status: 400 },
     );
   }
 
   try {
-    const blob = await put(filename, request.body, {
+    const blob: PutBlobResult = await put(filename, fileBody, {
       access: "public",
     });
 
@@ -21,8 +29,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   } catch (err) {
     console.error("ERRO NO UPLOAD DO BLOB:", err);
     return NextResponse.json(
-      { error: "Erro interno do servidor ao fazer upload." },
-      { status: 500 }
+      { error: "Erro interno ao processar o upload." },
+      { status: 500 },
     );
   }
 }
